@@ -2423,7 +2423,7 @@ function getRemainingLectureWeeks() {
     if (d.getDay() === 1 && isSchoolDay(iso)) weeks++;
     d.setDate(d.getDate()+1);
   }
-  // Partial current week
+  console.log('Lecture weeks remaining:', weeks, 'Today:', today.toISOString());
   return Math.max(0, weeks);
 }
 
