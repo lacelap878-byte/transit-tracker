@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)file:///C:/Users/kassa/Downloads/transit-tracker-p5_2.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Transit Tracker</title>
+<link rel="manifest" href="#" id="pwa-manifest">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TRANSIT//">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="ai-style-change-1">
+
+<!-- ── PIN LOCK OVERLAY ──────────────────────────────────────────────────── -->
+<div id="pin-overlay" class="hidden">
+  <div class="pin-logo">TRANSIT//</div>
+  <div class="pin-tagline">Your commute, tracked</div>
+  <div class="pin-prompt" id="pin-prompt">Enter PIN</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key danger-key" onclick="pinClear()">CLR</button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key accent" onclick="pinBackspace()">⌫</button>
+  </div>
+  <div class="pin-error-msg" id="pin-error"></div>
+  <div class="pin-setup-note" id="pin-setup-note"></div>
+</div>
+
+<div class="header">
+  <div class="header-top" style="position:relative">
+    <div class="app-title">TRANSIT//</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="weather-widget" style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="switchTab(&#39;dashboard&#39;)" title="Johannesburg weather">
+        <div id="weather-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M6.5 17H18.5C20.4 17 22 15.4 22 13.5C22 11.7 20.6 10.2 18.8 10C18.4 7.7 16.4 6 14 6C11.8 6 10 7.4 9.3 9.3C9.1 9.1 8.8 9 8.5 9C7.1 9 6 10.1 6 11.5C4.3 11.8 3 13.3 3 15C3 16.1 3.7 17 4.7 17H6.5Z" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg></div>
+        <div class="weather-corner" style="position:static">
+          <div class="weather-temp" id="weather-temp-label">12°C</div>
+          <div class="weather-desc" id="weather-desc-label">Overcast clouds</div>
+        </div>
+      </div>
+      <div class="date-pill" id="headerDate">17 Apr 2026</div>
+    </div>
+  </div>
+  <div class="nav-tabs" style="overflow-x: auto; display: flex; flex-wrap: nowrap; touch-action: pan-x;">
+    <button class="tab-btn active" onclick="switchTab(&#39;dashboard&#39;)">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab(&#39;log&#39;)">Log Trip</button>
+    <button class="tab-btn" onclick="switchTab(&#39;history&#39;)">History</button>
+    <button class="tab-btn" onclick="switchTab(&#39;compare&#39;)">Compare</button>
+    <button class="tab-btn" onclick="switchTab(&#39;calendar&#39;)">Calendar</button>
+    <button class="tab-btn" onclick="switchTab(&#39;settings&#39;)">Settings</button>
+  </div>
+</div>
+
+<div class="main ai-style-change-2">
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="section active">
+
+    <!-- Rain warning (hidden by default) -->
+    <div id="rain-warn" class="weather-rain-warn" style="display:none">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M20 17.5C20 19.43 18.43 21 16.5 21C14.57 21 13 19.43 13 17.5V17" stroke="#35f1c8" stroke-width="1.5" stroke-linecap="round"></path>
+        <path d="M6 17.5C6 19.43 4.43 21 2.5 21" stroke="#35f1c8" stroke-width="1.5" stroke-linecap="round"></path>
+        <path d="M9.5 21C9.5 22.1 8.6 23 7.5 23S5.5 22.1 5.5 21" stroke="#35f1c8" stroke-width="1.5" stroke-linecap="round"></path>
+        <path d="M12 2C8.5 2 5.5 4.5 5 8C3.3 8.3 2 9.8 2 11.5C2 13.4 3.6 15 5.5 15H18.5C20.4 15 22 13.4 22 11.5C22 9.7 20.6 8.2 18.8 8C18.4 4.7 15.5 2 12 2Z" stroke="#35f1c8" stroke-width="1.5"></path>
+      </svg>
+      <div id="rain-warn-text">Rain expected — budget for possible surge pricing</div>
+    </div>
+
+    <div class="card ai-style-change-3" style="background: linear-gradient(135deg, #1a1a1a 0%, #1e2a0a 100%); border-color: rgba(200,241,53,0.3);">
+      <div class="card-label">Spent so far (2026)</div>
+      <div class="card-value" id="dash-spent">R0.00</div>
+      <div class="card-sub" id="dash-spent-sub">0 trips logged</div>
+      <div class="progress-wrap">
+        <div class="progress-bar" id="dash-progress" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card ai-style-change-4">
+        <div class="card-label">This week</div>
+        <div class="card-value" id="dash-week">R0</div>
+        <div class="card-sub" id="dash-week-sub">of ~<span id="dash-week-budget">814</span></div>
+      </div>
+      <div class="card ai-style-change-5">
+        <div class="card-label">This month</div>
+        <div class="card-value" id="dash-month">R0</div>
+        <div class="card-sub" id="dash-month-sub">of ~<span id="dash-month-budget">3256</span></div>
+      </div>
+    </div>
+
+    <div class="card ai-style-change-6">
+      <div class="card-label">Remaining year projection</div>
+      <div class="card-value" id="dash-remaining">R0.00</div>
+      <div class="card-sub" id="dash-remaining-sub">0 lecture weeks remaining</div>
+    </div>
+
+    <div class="card ai-style-change-7">
+      <div class="card-label">Breakdown</div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Ride-hailing avg (to Attwell)</span>
+        <span class="breakdown-val accent" id="bd-bolt-attwell">R96.30</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Ride-hailing avg (to Rissik)</span>
+        <span class="breakdown-val accent" id="bd-bolt-rissik">R80.22</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Rea Vaya (fixed)</span>
+        <span class="breakdown-val" id="bd-rv">R14.00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Remaining lecture weeks</span>
+        <span class="breakdown-val" id="bd-weeks">0</span>
+      </div>
+    </div>
+
+    <!-- Price prediction -->
+    <div class="card ai-style-change-8" id="predict-card">
+      <div class="card-label">Price prediction</div>
+      <div id="predict-content" style="margin-top:10px"><div style="font-size:0.72rem;color:var(--muted);padding:6px 0">Log trips to unlock predictions. The model learns from your data.</div></div>
+    </div><div id="dow-grid-card" class="card ai-style-change-9" style="margin-top: 12px;">
+    <div class="card-label">Avg spend by day</div>
+    <div class="day-grid" style="display:flex;gap:4px;margin-top:12px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:400">Sun</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:400">Mon</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:400">Tue</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:400">Wed</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:400">Thu</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--accent);border-radius:2px;border:1px solid var(--accent)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--accent);font-weight:600">Fri</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1">
+        <div style="font-size:0.62rem;color:var(--muted);font-family:&#39;DM Mono&#39;,monospace">
+          –
+        </div>
+        <div style="width:100%;height:32px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border)"></div>
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);font-weight:400">Sat</div>
+      </div></div></div>
+
+    <div class="card ai-style-change-10" id="time-road-card" style="display:none">
+      <div class="card-label">Time on the road</div>
+      <div style="margin-top:12px;display:flex;gap:16px">
+        <div>
+          <div class="card-value" id="tor-total" style="font-size:1.3rem">0h 0m</div>
+          <div class="card-sub">total</div>
+        </div>
+        <div>
+          <div class="card-value" id="tor-avg" style="font-size:1.3rem">–</div>
+          <div class="card-sub">avg per trip</div>
+        </div>
+      </div>
+      <div id="tor-fun" style="margin-top:12px;font-size:0.72rem;color:var(--muted);min-height:32px;line-height:1.5"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px">Recent trips</div>
+    <div id="dash-recent"><div class="empty-state">No trips logged yet</div></div>
+  </div>
+
+  <!-- LOG TRIP -->
+  <div id="tab-log" class="section">
+    <div class="section-title">Log a trip</div>
+
+    <div class="card ai-style-change-11">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <div class="cpicker-wrap" id="wrap-log-date"><div class="cpicker-display" onclick="openDatePicker('log-date')" id="disp-log-date"><span id="label-log-date">Select date</span><span class="cpicker-icon">▼</span></div><div class="cpicker-panel" id="panel-log-date"></div></div><input type="hidden" id="log-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Time ordered</label>
+        <div class="cpicker-wrap" id="wrap-log-time"><div class="cpicker-display" onclick="openTimePicker('log-time')" id="disp-log-time"><span id="label-log-time">Select time</span><span class="cpicker-icon">▼</span></div><div class="cpicker-panel" id="panel-log-time"></div></div><input type="hidden" id="log-time">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Route</label>
+        <div class="chip-group" id="log-route-chips">
+          <button class="chip selected" onclick="selectChip(this,&#39;log-route-chips&#39;);updateLogHint()">Attwell → Rissik</button>
+          <button class="chip" onclick="selectChip(this,&#39;log-route-chips&#39;);updateLogHint()">Rissik → Attwell</button>
+          <button class="chip" onclick="selectChip(this,&#39;log-route-chips&#39;);updateLogHint()">Attwell → University</button>
+          <button class="chip" onclick="selectChip(this,&#39;log-route-chips&#39;);updateLogHint()">University → Attwell</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode of transport</label>
+        <div class="chip-group" id="log-mode-chips">
+          <button class="chip selected" onclick="selectChip(this,&#39;log-mode-chips&#39;);toggleAppField()">Bolt</button>
+          <button class="chip" onclick="selectChip(this,&#39;log-mode-chips&#39;);toggleAppField()">Rea Vaya</button>
+          <button class="chip" onclick="selectChip(this,&#39;log-mode-chips&#39;);toggleAppField()">Uber</button>
+          <button class="chip" onclick="selectChip(this,&#39;log-mode-chips&#39;);toggleAppField()">InDrive</button>
+        </div>
+      </div>
+      <div class="form-group" id="log-price-field">
+        <label class="form-label">Amount paid (R)</label>
+        <input type="number" id="log-price" placeholder="0.00" step="0.01" min="0">
+        <div id="log-price-hint" style="font-size:0.7rem;color:var(--muted);margin-top:6px;min-height:16px"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input type="text" id="log-notes" placeholder="e.g. raining, surge pricing...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Trip duration (optional)</label>
+        <input type="number" id="log-duration" placeholder="minutes" min="1" max="300" step="1">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <button type="button" class="btn btn-secondary" style="font-size:0.72rem;padding:8px 14px;width:auto" onclick="toggleQuotes()">+ Add other app quotes</button>
+        <div id="quotes-panel" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+          <p style="font-size:0.68rem;color:var(--muted);margin-bottom:10px">What did the other apps quote at the same time?</p>
+          <div class="input-row">
+            <div>
+              <label class="form-label">Bolt quote (R)</label>
+              <input type="number" id="quote-bolt" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div>
+              <label class="form-label">Uber quote (R)</label>
+              <input type="number" id="quote-uber" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <label class="form-label">InDrive quote (R)</label>
+            <input type="number" id="quote-indrive" placeholder="0.00" step="0.01" min="0">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="logTrip()">Save trip</button>
+    </div>
+
+    <div class="section-title">Check a price</div>
+    <div class="card ai-style-change-12">
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Seen a price but not taking the ride? Log it to train predictions.</p>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <div class="cpicker-wrap" id="wrap-qc-date"><div class="cpicker-display" onclick="openDatePicker('qc-date')" id="disp-qc-date"><span id="label-qc-date">Select date</span><span class="cpicker-icon">▼</span></div><div class="cpicker-panel" id="panel-qc-date"></div></div><input type="hidden" id="qc-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Time checked</label>
+        <div class="cpicker-wrap" id="wrap-qc-time"><div class="cpicker-display" onclick="openTimePicker('qc-time')" id="disp-qc-time"><span id="label-qc-time">Select time</span><span class="cpicker-icon">▼</span></div><div class="cpicker-panel" id="panel-qc-time"></div></div><input type="hidden" id="qc-time">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Route</label>
+        <div class="chip-group" id="qc-route-chips">
+          <button class="chip selected" onclick="selectChip(this,&#39;qc-route-chips&#39;)">Attwell → Rissik</button>
+          <button class="chip" onclick="selectChip(this,&#39;qc-route-chips&#39;)">Rissik → Attwell</button>
+          <button class="chip" onclick="selectChip(this,&#39;qc-route-chips&#39;)">Attwell → University</button>
+          <button class="chip" onclick="selectChip(this,&#39;qc-route-chips&#39;)">University → Attwell</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">App</label>
+        <div class="chip-group" id="qc-mode-chips">
+          <button class="chip selected" onclick="selectChip(this,&#39;qc-mode-chips&#39;)">Bolt</button>
+          <button class="chip" onclick="selectChip(this,&#39;qc-mode-chips&#39;)">Uber</button>
+          <button class="chip" onclick="selectChip(this,&#39;qc-mode-chips&#39;)">InDrive</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Price shown (R)</label>
+        <input type="number" id="qc-price" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <button class="btn btn-secondary" onclick="logPriceCheck()">Save price check</button>
+    </div>
+
+    <div class="section-title">Something different today?</div>
+    <div class="card ai-style-change-13">
+      <p style="font-size:0.75rem; color:var(--muted); margin-bottom:12px">Mark if you didn't use a mode on a scheduled day</p>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <div class="cpicker-wrap" id="wrap-skip-date"><div class="cpicker-display" onclick="openDatePicker('skip-date')" id="disp-skip-date"><span id="label-skip-date">Select date</span><span class="cpicker-icon">▼</span></div><div class="cpicker-panel" id="panel-skip-date"></div></div><input type="hidden" id="skip-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mode skipped</label>
+        <div class="chip-group" id="skip-mode-chips">
+          <button class="chip selected" onclick="selectChip(this,&#39;skip-mode-chips&#39;)">Bolt</button>
+          <button class="chip" onclick="selectChip(this,&#39;skip-mode-chips&#39;)">Rea Vaya</button>
+          <button class="chip" onclick="selectChip(this,&#39;skip-mode-chips&#39;)">Both</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="logSkip()">Mark as skipped</button>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div id="tab-compare" class="section">
+    <div class="section-title">App comparison</div>
+    <div class="section-subtitle">Based on quotes logged at trip time</div>
+
+    <div id="compare-no-data" class="empty-state" style="display: block; padding: 40px 0px;">
+      <div style="font-size:1.5rem;margin-bottom:10px">📊</div>
+      No quote data yet. When logging a trip, tap<br>"+ Add other app quotes" to start comparing.
+    </div>
+
+    <div id="compare-content" style="display: none;">
+      <!-- Win rate -->
+      <div class="card ai-style-change-14">
+        <div class="card-label">Cheapest app — win rate</div>
+        <div id="compare-winrate" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Savings summary -->
+      <div class="card ai-style-change-15" style="background:linear-gradient(135deg,#1a1a1a 0%,#0a2a1e 100%);border-color:rgba(53,241,200,0.3)">
+        <div class="card-label">Potential savings</div>
+        <div class="card-value" id="compare-savings" style="color:var(--accent2)">R0.00</div>
+        <div class="card-sub" id="compare-savings-sub">if you'd always taken the cheapest app</div>
+      </div>
+
+      <!-- Per-route breakdown -->
+      <div class="section-title" style="margin-top:4px">Avg price by app &amp; route</div>
+      <div id="compare-routes"></div>
+
+      <!-- Price trend graphs -->
+      <div class="section-title" style="margin-top:4px">Price over time</div>
+      <div id="compare-graphs"></div>
+
+      <!-- Today's price curve -->
+      <div class="section-title" style="margin-top:4px">Today's price curve</div>
+      <div id="compare-today"></div>
+
+      <!-- Quote log -->
+      <div class="section-title" style="margin-top:4px">Quote history</div>
+      <div id="compare-log"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="tab-history" class="section">
+    <div class="section-title">Trip history</div>
+    <div class="form-group">
+      <select id="history-filter" onchange="renderHistory()">
+        <option value="all">All trips</option>
+        <option value="Bolt">Bolt only</option>
+        <option value="Rea Vaya">Rea Vaya only</option>
+        <option value="Uber">Uber only</option>
+        <option value="InDrive">InDrive only</option>
+      </select>
+    </div>
+    <div id="history-list"><div class="empty-state">No trips found</div></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="tab-calendar" class="section">
+    <div class="section-title">School calendar</div>
+    <div class="section-subtitle">Tap a day to toggle school/off. Pre-loaded from UJ 2026 calendar.</div>
+
+    <div class="cal-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(200,241,53,0.5)"></div> School day</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,77,77,0.5)"></div> Holiday/off</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(136,136,136,0.3)"></div> Recess</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(53,241,200,0.5)"></div> Today</div>
+    </div>
+
+    <div style="margin-top:14px">
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="changeCalMonth(-1)">‹</button>
+        <div class="month-nav-title" id="cal-month-title">Apr 2026</div>
+        <button class="month-nav-btn" onclick="changeCalMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"><div class="cal-header">M</div><div class="cal-header">T</div><div class="cal-header">W</div><div class="cal-header">T</div><div class="cal-header">F</div><div class="cal-header">S</div><div class="cal-header">S</div><div class="cal-day other-month"></div><div class="cal-day other-month"></div><div class="cal-day recess" onclick="toggleCalDay(&#39;2026-04-01&#39;)">1</div><div class="cal-day recess" onclick="toggleCalDay(&#39;2026-04-02&#39;)">2</div><div class="cal-day recess" onclick="toggleCalDay(&#39;2026-04-03&#39;)">3</div><div class="cal-day recess" onclick="toggleCalDay(&#39;2026-04-04&#39;)">4</div><div class="cal-day recess" onclick="toggleCalDay(&#39;2026-04-05&#39;)">5</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-06&#39;)">6</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-07&#39;)">7</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-08&#39;)">8</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-09&#39;)">9</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-10&#39;)">10</div><div class="cal-day" onclick="toggleCalDay(&#39;2026-04-11&#39;)">11</div><div class="cal-day" onclick="toggleCalDay(&#39;2026-04-12&#39;)">12</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-13&#39;)">13</div><div class="cal-day today school" onclick="toggleCalDay(&#39;2026-04-14&#39;)">14</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-15&#39;)">15</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-16&#39;)">16</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-17&#39;)">17</div><div class="cal-day" onclick="toggleCalDay(&#39;2026-04-18&#39;)">18</div><div class="cal-day" onclick="toggleCalDay(&#39;2026-04-19&#39;)">19</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-20&#39;)">20</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-21&#39;)">21</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-22&#39;)">22</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-23&#39;)">23</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-24&#39;)">24</div><div class="cal-day" onclick="toggleCalDay(&#39;2026-04-25&#39;)">25</div><div class="cal-day" onclick="toggleCalDay(&#39;2026-04-26&#39;)">26</div><div class="cal-day holiday" onclick="toggleCalDay(&#39;2026-04-27&#39;)">27</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-28&#39;)">28</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-29&#39;)">29</div><div class="cal-day school" onclick="toggleCalDay(&#39;2026-04-30&#39;)">30</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-title">Add extra school day</div>
+    <div class="card ai-style-change-16">
+      <div class="form-group">
+        <label class="form-label">Date (e.g. Saturday)</label>
+        <div class="cpicker-wrap" id="wrap-extra-date"><div class="cpicker-display" onclick="openDatePicker('extra-date')" id="disp-extra-date"><span id="label-extra-date">Select date</span><span class="cpicker-icon">▼</span></div><div class="cpicker-panel" id="panel-extra-date"></div></div><input type="hidden" id="extra-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Transport used</label>
+        <select id="extra-mode-select">
+          <option value="Ride-hailing + Rea Vaya">Ride-hailing + Rea Vaya</option>
+          <option value="Ride-hailing only">Ride-hailing only</option>
+          <option value="Rea Vaya only">Rea Vaya only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addExtraDay()">Add day</button>
+    </div>
+
+    <div class="section-title">Extra school days</div>
+    <div id="extra-days-list"><div class="empty-state">No extra days added</div></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="tab-settings" class="section">
+    <div class="section-title">Settings</div>
+
+    <div class="card ai-style-change-17">
+      <div class="card-label">Fares</div>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Rea Vaya fare (R)</label>
+        <input type="number" id="set-rv-fare" placeholder="14" step="0.50" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bolt avg — to Attwell (R) <span class="tag tag-green">auto-updates</span></label>
+        <input type="number" id="set-bolt-attwell" placeholder="96.30" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bolt avg — to Rissik (R) <span class="tag tag-green">auto-updates</span></label>
+        <input type="number" id="set-bolt-rissik" placeholder="80.00" step="0.01" min="0">
+      </div>
+      <button class="btn btn-primary" onclick="saveFares()">Save fares</button>
+    </div>
+
+    <div class="card ai-style-change-18">
+      <div class="card-label">Weekly pattern</div>
+      <p style="font-size:0.72rem; color:var(--muted); margin: 10px 0">Set Bolt trips per day (0–2). Rea Vaya = school days Mon–Fri.</p>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px">
+        <div>
+          <label class="form-label">Monday — Bolt</label>
+          <input class="pattern-input" type="number" id="pat-mon" min="0" max="2" value="1">
+        </div>
+        <div>
+          <label class="form-label">Tuesday — Bolt</label>
+          <input class="pattern-input" type="number" id="pat-tue" min="0" max="2" value="1">
+        </div>
+        <div>
+          <label class="form-label">Wednesday — Bolt</label>
+          <input class="pattern-input" type="number" id="pat-wed" min="0" max="2" value="2">
+        </div>
+        <div>
+          <label class="form-label">Thursday — Bolt</label>
+          <input class="pattern-input" type="number" id="pat-thu" min="0" max="2" value="1">
+        </div>
+        <div>
+          <label class="form-label">Friday — Bolt</label>
+          <input class="pattern-input" type="number" id="pat-fri" min="0" max="2" value="2">
+        </div>
+        <div>
+          <label class="form-label">Saturday — Bolt</label>
+          <input class="pattern-input" type="number" id="pat-sat" min="0" max="2" value="0">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="savePattern()">Save pattern</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="savePatternToHistory()">Save &amp; archive current pattern</button>
+    </div>
+
+    <div class="card ai-style-change-19">
+      <div class="card-label">Pattern history</div>
+      <div id="pattern-history-list" style="margin-top:10px"><div style="font-size:0.72rem;color:var(--muted)">No archived patterns yet</div></div>
+    </div>
+
+    <div class="card ai-style-change-20">
+      <div class="card-label">Data export &amp; archive</div>
+      <p style="font-size:0.72rem;color:var(--muted);margin:10px 0 14px">Export your trip data to a JSON file you can keep as a backup or import later. After exporting you can optionally wipe the app to start a new semester fresh.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-secondary" onclick="exportData()">Export all data (.json)</button>
+        <button class="btn btn-secondary" onclick="exportSemester()">Export &amp; archive semester</button>
+        <label class="btn btn-secondary" style="cursor:pointer;text-align:center">
+          Import data (.json)
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+        </label>
+      </div>
+      <div id="export-status" style="font-size:0.7rem;color:var(--accent);margin-top:10px;min-height:16px"></div>
+    </div>
+
+    <div class="card ai-style-change-21">
+      <div class="card-label">Weather API key</div>
+      <div style="margin-top:10px">
+        <p style="font-size:0.72rem;color:var(--muted);margin-bottom:10px;line-height:1.5">Get a free key at openweathermap.org — never share it or paste it anywhere else.</p>
+        <input type="password" id="weather-key-input" placeholder="Paste your API key here" autocomplete="off" style="margin-bottom:8px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveWeatherKey()" style="font-size:0.72rem;padding:8px 12px">Save key</button>
+          <button class="btn btn-danger" onclick="clearWeatherKey()" style="font-size:0.72rem;padding:8px 12px">Remove</button>
+        </div>
+        <div id="weather-key-status" style="font-size:0.7rem;color:var(--accent);margin-top:8px;min-height:16px"></div>
+      </div>
+    </div>
+
+    <div class="card ai-style-change-21">
+      <div class="card-label">PIN lock</div>
+      <div id="pin-settings-content" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card ai-style-change-21">
+      <div class="card-label">Danger zone</div>
+      <button class="btn btn-danger" style="margin-top:10px" onclick="clearAllData()">Clear all data</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+
+
+</body></html>
